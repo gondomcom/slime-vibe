@@ -1,48 +1,40 @@
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, useTexture, Text, Float } from '@react-three/drei'
-import { useState, useRef, useEffect } from 'react'
-import * as THREE from 'three'
+import { OrbitControls, Float } from '@react-three/drei'
+import { useState, useRef, Suspense } from 'react'
 
-// Звук приветствия (заглушка, можно заменить на свой URL)
-const INTRO_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3' // Какой-то магический звук
+// Звук приветствия (заглушка)
+const INTRO_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'
 
 function Slime({ emotion }) {
-  const meshRef = useRef()
   const outerRef = useRef()
-  const eyesRef = useRef()
   
-  // Анимация прыжков и желе
   useFrame((state) => {
     const time = state.clock.getElapsedTime()
-    
     // Прыжки
     const jump = Math.abs(Math.sin(time * 3)) * 1.5
     if (outerRef.current) {
         outerRef.current.position.y = jump
-        // Сплющивание при приземлении
+        // Сплющивание
         const scaleY = 1 + (Math.sin(time * 6) * 0.1)
         const scaleXZ = 1 - (Math.sin(time * 6) * 0.05)
         outerRef.current.scale.set(scaleXZ, scaleY, scaleXZ)
     }
   })
 
-  // Цвета эмоций
   const colors = {
-    happy: '#55ff55', // Зеленый
-    angry: '#ff5555', // Красный
-    sad: '#5555ff',   // Синий
-    dead: '#555555'   // Серый
+    happy: '#55ff55',
+    angry: '#ff5555',
+    sad: '#5555ff'
   }
 
   return (
     <group ref={outerRef}>
-      {/* Внутреннее ядро (непрозрачное) */}
+      {/* Ядро */}
       <mesh position={[0, 0, 0]}>
         <boxGeometry args={[1.2, 1.2, 1.2]} />
         <meshStandardMaterial color={colors[emotion]} />
       </mesh>
-
-      {/* Внешняя слизь (прозрачная) */}
+      {/* Слизь */}
       <mesh>
         <boxGeometry args={[2, 2, 2]} />
         <meshPhysicalMaterial 
@@ -51,24 +43,20 @@ function Slime({ emotion }) {
           opacity={0.4} 
           roughness={0}
           metalness={0.1}
-          transmission={0.5} // Стекловидность
+          transmission={0.5} 
           thickness={1}
         />
       </mesh>
-
       {/* Лицо */}
       <group position={[0, 0, 1.01]}>
-        {/* Правый глаз */}
         <mesh position={[0.5, 0.3, 0]}>
           <planeGeometry args={[0.3, 0.3]} />
           <meshBasicMaterial color="black" />
         </mesh>
-        {/* Левый глаз */}
         <mesh position={[-0.5, 0.3, 0]}>
           <planeGeometry args={[0.3, 0.3]} />
           <meshBasicMaterial color="black" />
         </mesh>
-        {/* Рот */}
         <mesh position={[0, -0.3, 0]}>
            {emotion === 'happy' && <planeGeometry args={[0.6, 0.2]} />}
            {emotion === 'angry' && <planeGeometry args={[0.6, 0.1]} />}
@@ -88,7 +76,7 @@ function App() {
   const handleStart = () => {
     setStarted(true)
     audioRef.current.volume = 0.5
-    audioRef.current.play().catch(e => console.log('Audio error:', e))
+    audioRef.current.play().catch(e => console.error('Audio error:', e))
   }
 
   const toggleEmotion = () => {
@@ -98,7 +86,7 @@ function App() {
   }
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#1a1a1a', overflow: 'hidden' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       
       {!started && (
         <div 
@@ -107,53 +95,57 @@ function App() {
             position: 'absolute',
             top: 0, left: 0, width: '100%', height: '100%',
             display: 'flex', justifyContent: 'center', alignItems: 'center',
-            background: 'rgba(0,0,0,0.8)',
-            zIndex: 10,
+            background: 'rgba(0,0,0,0.9)',
+            zIndex: 9999,
             cursor: 'pointer',
             color: 'white',
-            fontSize: '2rem',
-            fontFamily: 'monospace'
+            flexDirection: 'column'
           }}
         >
-          <h1>[ ЖМИ СЮДА ЧТОБЫ ВОЙТИ ]</h1>
+          <h1 style={{ fontSize: '3rem', fontFamily: 'monospace', margin: 0 }}>[ ВХОД В МАТРИЦУ ]</h1>
+          <p style={{ marginTop: '20px', color: '#888' }}>(кликни)</p>
         </div>
       )}
 
       <Canvas camera={{ position: [0, 2, 6] }}>
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} />
-        
-        {started && (
-          <>
-            <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-              <Slime emotion={emotion} />
-            </Float>
-            <OrbitControls enableZoom={false} />
-            
-            <mesh position={[0, -2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[100, 100]} />
-              <meshStandardMaterial color="#333" />
-            </mesh>
-          </>
-        )}
+        <Suspense fallback={null}>
+          <ambientLight intensity={0.5} />
+          <pointLight position={[10, 10, 10]} />
+          
+          {started && (
+            <>
+              <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+                <Slime emotion={emotion} />
+              </Float>
+              <OrbitControls enableZoom={false} />
+              
+              <mesh position={[0, -2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[100, 100]} />
+                <meshStandardMaterial color="#333" />
+              </mesh>
+            </>
+          )}
+        </Suspense>
       </Canvas>
 
       {started && (
-        <div style={{ position: 'absolute', bottom: 50, left: '50%', transform: 'translateX(-50%)' }}>
+        <div style={{ position: 'absolute', bottom: 50, left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}>
           <button 
             onClick={toggleEmotion}
             style={{
               padding: '15px 30px',
               fontSize: '1.5rem',
               background: 'white',
+              color: 'black',
               border: 'none',
               borderRadius: '10px',
               cursor: 'pointer',
               fontFamily: 'monospace',
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              boxShadow: '0 0 10px rgba(255,255,255,0.5)'
             }}
           >
-            ПОМЕНЯТЬ ВАЙБ
+            СМЕНИТЬ ВАЙБ
           </button>
         </div>
       )}
